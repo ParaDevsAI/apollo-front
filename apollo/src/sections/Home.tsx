@@ -5,6 +5,7 @@ import CampaignHeader from "@/components/Home/CampaignHeader";
 import SignInCard from "@/components/Home/SignInCard";
 import ExploreSection from "@/components/Home/ExploreSection";
 import TaskCard from "@/components/Home/TaskCard";
+import BackgroundBlobs from "@/components/Home/BackgroundBlobs";
 
 export default function Home() {
   const [tasks, setTasks] = useState([
@@ -99,20 +100,17 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen pt-20 md:pt-34 px-4 md:px-6 pb-20 bg-[var(--color-bg-page)]" style={{ background: 'var(--color-bg-page)' }}>
-      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
-        {/* Campaign Header */}
+    <div className="min-h-screen pt-20 md:pt-34 px-4 md:px-6 pb-20 bg-[var(--color-bg-page)] relative" style={{ background: 'var(--color-bg-page)' }}>
+      <BackgroundBlobs />
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 relative z-10">
         <div className="flex justify-start">
           <CampaignHeader />
         </div>
 
-        {/* Sign In Card */}
         <SignInCard />
 
-        {/* Explore Section */}
         <ExploreSection />
 
-        {/* Task Cards */}
         <div className="grid gap-4 md:gap-6">
           {tasks.map((task) => (
             <TaskCard

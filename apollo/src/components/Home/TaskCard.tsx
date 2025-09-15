@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, RotateCcw, Check } from "lucide-react";
+import { ArrowUpRight, RotateCcw, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface TaskCardProps {
@@ -96,9 +96,9 @@ export default function TaskCard({
   const getCardStyles = () => {
     switch (status) {
       case "completed":
-        return "bg-[var(--color-bg-card-completed)]";
+        return "bg-[var(--color-bg-card-completed)] opacity-60";
       default:
-        return "bg-[var(--color-bg-cards)]";
+        return "bg-[var(--color-bg-cards)] opacity-60";
     }
   };
 
@@ -132,7 +132,7 @@ export default function TaskCard({
             onClick={handleVerify}
             className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-md"
           >
-            <ArrowUp className="w-4 h-4 md:w-5 md:h-5 text-black" />
+            <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 text-black" />
           </button>
         );
     }
@@ -147,7 +147,6 @@ export default function TaskCard({
           {title}
         </h3>
         
-        {/* Subtítulo (Projeto) */}
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
             <span className="text-xs font-bold text-black">{projectIcon}</span>
@@ -169,7 +168,6 @@ export default function TaskCard({
           )}
         </div>
 
-        {/* BOOST e Ícone */}
         <div className="flex items-center justify-between">
           <div className="bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] text-[var(--color-primary)] px-2 py-1 rounded-full text-xs font-bold">
             BOOST {boostValue}
@@ -179,7 +177,6 @@ export default function TaskCard({
         </div>
       </div>
 
-      {/* Desktop Layout */}
       <div className="hidden md:flex items-center justify-between">
         <div className="flex-1">
           <h3 className="text-[var(--color-text-primary)] text-lg font-semibold mb-3">

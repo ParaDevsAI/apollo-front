@@ -26,51 +26,45 @@ export default function MobileMenu({
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-xl z-[998] md:hidden"
+          className="fixed inset-0 bg-black/10 backdrop-blur-sm z-[998] md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
               <div
-                className={`md:hidden fixed top-0 right-0 h-screen w-full max-w-[320px]
-                  backdrop-blur-lg bg-white/90
-                  border-l border-white/10 px-4 py-6 z-[999]
+                className={`md:hidden fixed top-0 left-0 right-0 w-full
+                  bg-[var(--color-bg-cards)] px-6 py-6 z-[999]
                   transform transition-transform duration-300 ease-in-out shadow-xl
-                  ${isOpen ? "translate-x-0" : "translate-x-full"}
-                  flex flex-col justify-between`}
+                  ${isOpen ? "translate-y-0" : "-translate-y-full"}
+                  flex flex-col space-y-6 rounded-b-3xl border-b border-[var(--color-border)]`}
               >
-        <div>
-          <div className="flex items-center justify-between mb-10">
-            <Image src={logo} alt="Apollo logo" width={134} height={30} className="object-contain" />
-            <button onClick={() => setIsOpen(false)} className="text-[var(--color-text-primary)]">
-              <X size={28} />
+          <div className="flex items-center justify-between">
+            <Image src={logo} alt="Apollo logo" width={120} height={24} className="object-contain" />
+            <button onClick={() => setIsOpen(false)} className="text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]">
+              <X size={24} />
             </button>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col space-y-4">
             {navLinks.map((link) => (
-              <div key={link.label} className="flex flex-col">
-                <a
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className="py-3 text-[var(--color-text-secondary)] text-base font-medium hover:text-[var(--color-text-primary)] transition"
-                >
-                  {link.label}
-                </a>
-                <div className="w-full h-[1px] bg-gray-200" />
-              </div>
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="text-[var(--color-text-primary)] text-lg font-medium hover:text-[var(--color-text-secondary)] transition-colors"
+              >
+                {link.label}
+              </a>
             ))}
           </div>
-        </div>
-        
-        <div className="pt-6 pb-4">
-          <BaseButton
-            variant="transparent"
-            className="w-full px-5 py-3 text-[14px] font-medium"
-          >
-            CONNECT WALLET
-          </BaseButton>
-        </div>
+          <div className="flex justify-center">
+            <BaseButton
+              variant="transparent"
+              className="px-8 py-3 text-sm font-medium"
+            >
+              CONNECT WALLET
+            </BaseButton>
+          </div>
       </div>
     </>
   );
