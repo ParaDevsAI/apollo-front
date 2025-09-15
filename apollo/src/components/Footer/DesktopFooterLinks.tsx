@@ -24,7 +24,7 @@ export default function DesktopFooterLinks({ links }: Props) {
         <a
           key={link.label}
           href={link.href}
-          className="text-[var(--color-text-primary)] text-2xl max-md:text-sm transition-colors duration-300 hover:text-[var(--color-text-secondary)]"
+          className="text-[var(--color-text-primary)] text-sm sm:text-base md:text-lg lg:text-xl transition-colors duration-300 hover:text-[var(--color-text-secondary)]"
         >
           {link.label}
         </a>

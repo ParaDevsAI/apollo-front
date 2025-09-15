@@ -31,14 +31,14 @@ export default function MobileMenu({
         />
       )}
 
-      <div
-        className={`md:hidden fixed top-0 right-0 h-screen w-full max-w-[430px]
-          backdrop-blur-lg bg-white/90
-          border-l border-white/10 px-3 py-6 z-[999]
-          transform transition-transform duration-300 ease-in-out shadow-xl
-          ${isOpen ? "translate-x-0" : "translate-x-full"}
-          flex flex-col justify-between`}
-      >
+              <div
+                className={`md:hidden fixed top-0 right-0 h-screen w-full max-w-[320px]
+                  backdrop-blur-lg bg-white/90
+                  border-l border-white/10 px-4 py-6 z-[999]
+                  transform transition-transform duration-300 ease-in-out shadow-xl
+                  ${isOpen ? "translate-x-0" : "translate-x-full"}
+                  flex flex-col justify-between`}
+              >
         <div>
           <div className="flex items-center justify-between mb-10">
             <Image src={logo} alt="Apollo logo" width={134} height={30} className="object-contain" />

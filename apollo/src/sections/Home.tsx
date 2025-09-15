@@ -99,8 +99,8 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen pt-34 px-6 pb-20 bg-[var(--color-bg-page)]" style={{ background: 'var(--color-bg-page)' }}>
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen pt-20 md:pt-34 px-4 md:px-6 pb-20 bg-[var(--color-bg-page)]" style={{ background: 'var(--color-bg-page)' }}>
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
         {/* Campaign Header */}
         <div className="flex justify-start">
           <CampaignHeader />
@@ -113,7 +113,7 @@ export default function Home() {
         <ExploreSection />
 
         {/* Task Cards */}
-        <div className="grid gap-6">
+        <div className="grid gap-4 md:gap-6">
           {tasks.map((task) => (
             <TaskCard
               key={task.id}
