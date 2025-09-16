@@ -387,51 +387,9 @@ export function useQuestManager(questId?: number): UseQuestManagerReturn {
     try {
       console.log(`🎁 Claiming rewards for quest ${questId}...`);
 
-      // Step 1: Build claim transaction on backend
-      console.log('🏗️ Building claim transaction...');
-      console.debug('DEBUG: Wallet state before building claim transaction:', {
-        isConnected: wallet.isConnected,
-        address: wallet.address,
-        walletName: wallet.selectedWallet?.name
-      });
-      
-      const transactionXdr = await apolloApi.buildClaimRewards(questId, wallet.address);
-      
-      console.log('📄 Claim transaction XDR received from backend');
-      console.debug('DEBUG: Claim transaction XDR length:', transactionXdr?.length);
-      console.debug('DEBUG: Claim transaction XDR preview:', transactionXdr?.substring(0, 100) + '...');
-
-      // Step 2: Sign transaction with wallet
-      console.log('✍️ Signing claim transaction with wallet...');
-      console.debug('DEBUG: About to call signTransaction for claim with wallet:', {
-        walletConnected: wallet.isConnected,
-        signTransactionType: typeof signTransaction,
-        xdrValid: !!transactionXdr && transactionXdr.length > 0
-      });
-      
-      let signedXdr: string;
-      try {
-        signedXdr = await signTransaction(transactionXdr);
-        console.log('✅ Claim transaction signed successfully');
-        console.debug('DEBUG: Signed claim XDR length:', signedXdr?.length);
-        console.debug('DEBUG: Signed claim XDR preview:', signedXdr?.substring(0, 100) + '...');
-        
-        if (!signedXdr || signedXdr.length === 0) {
-          throw new Error('Wallet returned empty or null signed transaction for claim');
-        }
-      } catch (signingError: any) {
-        console.error('❌ Claim transaction signing failed:', signingError);
-        console.debug('DEBUG: Claim signing error details:', {
-          errorType: signingError?.constructor?.name,
-          errorMessage: signingError?.message,
-          errorStack: signingError?.stack?.substring(0, 500)
-        });
-        throw new Error(`Claim transaction signing failed: ${signingError.message || 'Unknown wallet error'}`);
-      }
-
-      // Step 3: Submit signed transaction via backend
-      console.log('📤 Submitting signed claim transaction...');
-      const result = await apolloApi.submitClaimRewards(questId, signedXdr, wallet.address);
+      // Use direct claim endpoint (admin action, no wallet signature needed for demo)
+      console.log('🏗️ Calling direct claim endpoint...');
+      const result = await apolloApi.claimQuestRewards(questId, wallet.address);
       
       console.log('🎉 Quest rewards claimed successfully:', result);
 

@@ -37,9 +37,11 @@ export default function QuestCard({
   });
   
   // Estado local para controlar o registro
-  const [localStatus, setLocalStatus] = useState<'idle' | 'connecting' | 'authenticating' | 'registering' | 'registered' | 'error'>('idle');
+  const [localStatus, setLocalStatus] = useState<'idle' | 'connecting' | 'authenticating' | 'registering' | 'registered' | 'verifying' | 'verified' | 'claiming' | 'claimed' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [questStatus, setQuestStatus] = useState<QuestStatus | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [isClaimed, setIsClaimed] = useState<boolean>(false);
   
   // Verificar status da quest quando a wallet e autenticação mudarem
   useEffect(() => {
@@ -130,6 +132,70 @@ export default function QuestCard({
       }, 5000);
     }
   };
+
+  // Função para verificar conclusão da quest
+  const handleVerify = async () => {
+    console.log(`🔍 APOLLO QUEST VERIFICATION - Iniciando para Quest ${quest.id}`);
+    setErrorMessage(null);
+
+    try {
+      setLocalStatus('verifying');
+      
+      const verifyResult = await questManager.verifyQuestCompletion(quest.id);
+      
+      if (verifyResult.success) {
+        setLocalStatus('verified');
+        setIsVerified(true);
+        console.log(`✅ Verificação da Quest ${quest.id} concluída com sucesso!`);
+        console.log('📊 Resultado da verificação:', verifyResult.data);
+      } else {
+        throw new Error(verifyResult.message || 'Falha na verificação');
+      }
+
+    } catch (error: any) {
+      console.error(`❌ Erro na verificação da Quest ${quest.id}:`, error);
+      setLocalStatus('error');
+      setErrorMessage(error.message || 'Erro inesperado durante a verificação');
+      
+      // Voltar para registered após alguns segundos
+      setTimeout(() => {
+        setLocalStatus('registered');
+        setErrorMessage(null);
+      }, 5000);
+    }
+  };
+
+  // Função para claim de recompensas
+  const handleClaim = async () => {
+    console.log(`🎁 APOLLO QUEST CLAIM - Iniciando para Quest ${quest.id}`);
+    setErrorMessage(null);
+
+    try {
+      setLocalStatus('claiming');
+      
+      const claimResult = await questManager.claimQuestRewards(quest.id);
+      
+      if (claimResult.success) {
+        setLocalStatus('claimed');
+        setIsClaimed(true);
+        console.log(`🎉 Claim da Quest ${quest.id} concluído com sucesso!`);
+        console.log('💰 Resultado do claim:', claimResult.data);
+      } else {
+        throw new Error(claimResult.message || 'Falha no claim');
+      }
+
+    } catch (error: any) {
+      console.error(`❌ Erro no claim da Quest ${quest.id}:`, error);
+      setLocalStatus('error');
+      setErrorMessage(error.message || 'Erro inesperado durante o claim');
+      
+      // Voltar para verified após alguns segundos
+      setTimeout(() => {
+        setLocalStatus('verified');
+        setErrorMessage(null);
+      }, 5000);
+    }
+  };
   
   const formatRewardType = (questType: any) => {
     if (questType?.TradeVolume) {
@@ -192,9 +258,15 @@ export default function QuestCard({
     switch (localStatus) {
       case "registered":
         return "bg-green-500/20 border-green-500/50";
+      case "verified":
+        return "bg-yellow-500/20 border-yellow-500/50";
+      case "claimed":
+        return "bg-purple-500/20 border-purple-500/50";
       case "connecting":
       case "authenticating":
       case "registering":
+      case "verifying":
+      case "claiming":
         return "bg-blue-500/20 border-blue-500/50 animate-pulse";
       case "error":
         return "bg-red-500/20 border-red-500/50";
@@ -242,7 +314,7 @@ export default function QuestCard({
               REGISTERING...
             </span>
             <button className="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center">
-              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin animate-pulse" />
             </button>
           </div>
         );
@@ -252,7 +324,59 @@ export default function QuestCard({
             <span className="text-green-400 text-xs md:text-sm font-medium">
               REGISTERED
             </span>
-            <button className="w-8 h-8 md:w-10 md:h-10 bg-green-500 rounded-full flex items-center justify-center">
+            <button 
+              onClick={handleVerify}
+              className="w-8 h-8 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center hover:bg-yellow-600 transition-colors shadow-md"
+              title="Verify quest completion"
+            >
+              <span className="text-xs text-white font-bold">✓</span>
+            </button>
+          </div>
+        );
+      case "verifying":
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-400 text-xs md:text-sm font-medium">
+              VERIFYING...
+            </span>
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin animate-pulse" />
+            </button>
+          </div>
+        );
+      case "verified":
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-400 text-xs md:text-sm font-medium">
+              VERIFIED
+            </span>
+            <button 
+              onClick={handleClaim}
+              className="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center hover:bg-purple-600 transition-colors shadow-md"
+              title="Claim quest rewards"
+            >
+              <span className="text-xs text-white font-bold">🎁</span>
+            </button>
+          </div>
+        );
+      case "claiming":
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-purple-400 text-xs md:text-sm font-medium">
+              CLAIMING...
+            </span>
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center">
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin animate-pulse" />
+            </button>
+          </div>
+        );
+      case "claimed":
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-purple-400 text-xs md:text-sm font-medium">
+              REWARDS CLAIMED
+            </span>
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center">
               <Check className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </button>
           </div>

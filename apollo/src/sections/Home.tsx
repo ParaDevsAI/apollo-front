@@ -74,7 +74,7 @@ export default function Home() {
         <ExploreSection />
 
         {questsLoading && quests.length === 0 ? (
-          <div className="grid gap-4 md:gap-6">
+          <div className=" overflow-auto grid gap-4 md:gap-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="bg-[var(--color-bg-cards)] opacity-60 rounded-[12px] md:rounded-[20px] p-4 md:p-6 border border-[var(--color-border)] animate-pulse">
                 <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>

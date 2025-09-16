@@ -303,6 +303,18 @@ class ApolloApiClient {
     return response.data;
   }
 
+  /**
+   * Claim quest rewards (direct claim for admin/demo)
+   */
+  async claimQuestRewards(questId: number, publicKey: string): Promise<any> {
+    const response = await this.request(`/auth/wallet/quest/${questId}/claim`, {
+      method: 'POST',
+      body: JSON.stringify({ publicKey }),
+    });
+
+    return response.data;
+  }
+
   // ========================================
   // QUEST INFORMATION ENDPOINTS
   // ========================================
