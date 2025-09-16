@@ -2,6 +2,7 @@
 
 import { ArrowUpRight, RotateCcw, Check } from "lucide-react";
 import { useState, useEffect } from "react";
+import ClientOnly from "@/components/ClientOnly";
 
 interface TaskCardProps {
   title: string;
@@ -139,7 +140,8 @@ export default function TaskCard({
   };
 
   return (
-    <div className={`relative ${getCardStyles()} rounded-[12px] md:rounded-[20px] p-4 md:p-6 border border-[var(--color-border)] hover:border-white transition-colors`}>
+    <ClientOnly>
+      <div className={`relative ${getCardStyles()} rounded-[12px] md:rounded-[20px] p-4 md:p-6 border border-[var(--color-border)] hover:border-white transition-colors`}>
       {/* Mobile Layout */}
       <div className="md:hidden space-y-4">
         {/* Título */}
@@ -214,6 +216,7 @@ export default function TaskCard({
           {getActionButton()}
         </div>
       </div>
-    </div>
+      </div>
+    </ClientOnly>
   );
 }

@@ -408,13 +408,13 @@ export function WalletProvider({ children }: WalletProviderProps) {
       transactionXDR: transactionXDR,
       walletAddress: wallet.address,
       walletName: wallet.selectedWallet?.name,
-      networkPassphrase: WalletNetwork.PUBLIC,
+      networkPassphrase: WalletNetwork.TESTNET,
     });
 
     try {
       const signOptions = {
         address: wallet.address,
-        networkPassphrase: WalletNetwork.PUBLIC, // Mude para TESTNET se necessário
+        networkPassphrase: WalletNetwork.TESTNET, // Usando Testnet para testes seguros
       };
       
       console.log('⚙️ Opções de assinatura:', signOptions);

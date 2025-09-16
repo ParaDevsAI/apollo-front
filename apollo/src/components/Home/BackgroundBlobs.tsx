@@ -1,8 +1,11 @@
 "use client";
 
+import ClientOnly from "@/components/ClientOnly";
+
 export default function BackgroundBlobs() {
   return (
-    <div className="absolute top-0 left-0 right-0 h-screen pointer-events-none overflow-hidden">
+    <ClientOnly>
+      <div className="absolute top-0 left-0 right-0 h-screen pointer-events-none overflow-hidden">
        <div 
          className="absolute top-20 -right-72 w-96 h-96 rounded-full opacity-100"
          style={{
@@ -29,6 +32,7 @@ export default function BackgroundBlobs() {
            transform: 'translate(-50%, -50%) scale(1.1)'
          }}
        />
-    </div>
+      </div>
+    </ClientOnly>
   );
 }

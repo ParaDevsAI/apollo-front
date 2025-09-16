@@ -32,6 +32,7 @@ export function useWalletKit() {
       address: wallet.address,
       formattedAddress: formatAddress(wallet.address),
       walletName: wallet.selectedWallet?.name || null,
+      walletType: wallet.selectedWallet?.name || 'Unknown',
       isConnected: wallet.isConnected,
       isLoading: wallet.isLoading,
       error: wallet.error,

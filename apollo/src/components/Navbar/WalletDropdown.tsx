@@ -3,10 +3,15 @@
 import { useWalletKit } from "@/hooks/useWalletKit";
 import { useEffect, useRef } from "react";
 
+interface WalletInfo {
+  formattedAddress: string;
+  walletType: string;
+}
+
 interface WalletDropdownProps {
   isOpen: boolean;
   onClose: () => void;
-  walletInfo: any;
+  walletInfo: WalletInfo;
 }
 
 export default function WalletDropdown({ isOpen, onClose, walletInfo }: WalletDropdownProps) {

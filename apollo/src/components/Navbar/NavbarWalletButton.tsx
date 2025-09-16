@@ -3,6 +3,7 @@
 import { useWalletKit } from "@/hooks/useWalletKit";
 import ClientOnly from "@/components/ClientOnly";
 import WalletDropdown from "@/components/Navbar/WalletDropdown";
+import BaseButton from "@/components/Ui/Button";
 import { useState } from "react";
 
 interface NavbarWalletButtonProps {
@@ -57,12 +58,13 @@ export default function NavbarWalletButton({
   return (
     <ClientOnly 
       fallback={
-        <button 
-          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm font-medium transition-colors duration-200 disabled:opacity-50"
+        <BaseButton 
+          variant="transparent"
+          className="px-5 py-2 text-[14px] font-medium opacity-50"
           disabled
         >
           CONNECT WALLET
-        </button>
+        </BaseButton>
       }
     >
       <div className={isMobile ? "flex flex-col items-center gap-2" : "relative"}>
@@ -88,22 +90,33 @@ export default function NavbarWalletButton({
             )}
           </>
         ) : (
-          // Desktop: novo estilo alinhado com navlinks
+          // Desktop: estilo com botão transparente
           <>
-            <button
-              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm font-medium transition-colors duration-200 cursor-pointer"
-              onClick={handleWalletAction}
-              disabled={isConnecting || connectionStatus === 'connecting'}
-            >
-              {walletInfo.isConnected ? walletInfo.formattedAddress : 'CONNECT WALLET'}
-            </button>
-            
-            {walletInfo.isConnected && (
-              <WalletDropdown 
-                isOpen={isDropdownOpen}
-                onClose={() => setIsDropdownOpen(false)}
-                walletInfo={walletInfo}
-              />
+            {walletInfo.isConnected ? (
+              <div className="relative">
+                <button
+                  className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm font-medium transition-colors duration-200 cursor-pointer"
+                  onClick={handleWalletAction}
+                  disabled={isConnecting || connectionStatus === 'connecting'}
+                >
+                  {walletInfo.formattedAddress}
+                </button>
+                
+                <WalletDropdown 
+                  isOpen={isDropdownOpen}
+                  onClose={() => setIsDropdownOpen(false)}
+                  walletInfo={walletInfo}
+                />
+              </div>
+            ) : (
+              <BaseButton
+                variant="transparent"
+                className="px-5 py-2 text-[14px] font-medium"
+                onClick={handleWalletAction}
+                disabled={isConnecting || connectionStatus === 'connecting'}
+              >
+                {isConnecting || connectionStatus === 'connecting' ? 'CONECTANDO...' : 'CONNECT WALLET'}
+              </BaseButton>
             )}
           </>
         )}
