@@ -70,6 +70,7 @@ export default function QuestCard({
   // Função para gerenciar o registro completo
   const handleRegistration = async () => {
     console.log(`🎯 APOLLO QUEST REGISTRATION - Iniciando para Quest ${quest.id}`);
+    console.debug('DEBUG: Quest object at registration time:', quest);
     setErrorMessage(null);
 
     try {
@@ -327,11 +328,11 @@ export default function QuestCard({
           <div className="flex items-center justify-between text-xs text-[var(--color-text-primary)]">
             <div className="flex flex-col">
               <span className="text-[var(--color-text-primary)] opacity-70">Reward per Winner</span>
-              <span className="font-medium">{rewardAmount} {quest.reward_token}</span>
+              <span className="font-medium">{rewardAmount}</span>
             </div>
             <div className="flex flex-col text-right">
               <span className="text-[var(--color-text-primary)] opacity-70">Total Pool</span>
-              <span className="font-medium">{totalReward} {quest.reward_token}</span>
+              <span className="font-medium">{totalReward} </span>
             </div>
           </div>
 
@@ -403,11 +404,11 @@ export default function QuestCard({
             <div className="flex items-center gap-6 mb-4 text-xs text-[var(--color-text-primary)]">
               <div className="flex flex-col">
                 <span className="text-[var(--color-text-primary)] opacity-70">Reward per Winner</span>
-                <span className="font-medium text-sm">{rewardAmount} {quest.reward_token}</span>
+                <span className="font-medium text-sm">{rewardAmount} </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[var(--color-text-primary)] opacity-70">Total Pool</span>
-                <span className="font-medium text-sm">{totalReward} {quest.reward_token}</span>
+                <span className="font-medium text-sm">{totalReward}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[var(--color-text-primary)] opacity-70">Max Winners</span>

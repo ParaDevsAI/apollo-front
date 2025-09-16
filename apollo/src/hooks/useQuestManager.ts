@@ -1,11 +1,15 @@
-/**
- * Apollo Quest Manager Hook
- * Integrates frontend wallet with backend quest system
- */
-
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@/contexts/WalletContext';
 import apolloApi, { type QuestStatus, type QuestInfo } from '@/services/api';
+
+/**
+ * Apollo Quest Manager Hook
+ * Integrates frontend wallet with backend quest system
+ * Enhanced with comprehensive debugging and validation
+ * Handles authentication flow with Stellar wallets and quest operations
+ * Added auto-authentication on wallet connection changes
+ * Enhanced error handling and debug logging for transaction signing
+ */
 
 export interface QuestActionResult {
   success: boolean;
@@ -43,24 +47,6 @@ export function useQuestManager(questId?: number): UseQuestManagerReturn {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [questStatus, setQuestStatus] = useState<QuestStatus | null>(null);
-
-  // Check authentication status on wallet changes
-  useEffect(() => {
-    const checkAuth = () => {
-      const hasToken = apolloApi.isAuthenticated();
-      const hasWallet = wallet.isConnected && wallet.address;
-      setIsAuthenticated(hasToken && !!hasWallet);
-    };
-
-    checkAuth();
-  }, [wallet.isConnected, wallet.address]);
-
-  // Load quest status when questId and authentication changes
-  useEffect(() => {
-    if (questId && isAuthenticated && wallet.address) {
-      loadQuestStatus(questId);
-    }
-  }, [questId, isAuthenticated, wallet.address]);
 
   /**
    * Clear error state
@@ -140,10 +126,89 @@ export function useQuestManager(questId?: number): UseQuestManagerReturn {
     }
   }, [wallet.isConnected, wallet.address]);
 
+  // Auto-authenticate when wallet connects
+  useEffect(() => {
+    const autoAuthenticate = async () => {
+      if (wallet.isConnected && wallet.address && !apolloApi.isAuthenticated()) {
+        console.log('🔐 Auto-authenticating wallet with backend...');
+        try {
+          const result = await authenticateWallet();
+          if (result.success) {
+            console.log('✅ Auto-authentication successful');
+          }
+        } catch (error) {
+          console.warn('⚠️ Auto-authentication failed:', error);
+        }
+      }
+    };
+
+    autoAuthenticate();
+  }, [wallet.isConnected, wallet.address, authenticateWallet]);
+
+  // Check authentication status on wallet changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const hasToken = apolloApi.isAuthenticated();
+      const hasWallet = wallet.isConnected && wallet.address;
+      const isAuth = hasToken && !!hasWallet;
+      
+      console.debug('DEBUG: Authentication status check:', {
+        hasToken,
+        hasWallet,
+        walletConnected: wallet.isConnected,
+        walletAddress: wallet.address,
+        finalAuthStatus: isAuth
+      });
+      
+      setIsAuthenticated(isAuth);
+    };
+
+    checkAuth();
+  }, [wallet.isConnected, wallet.address]);
+
+
+
+  // Load quest status when questId and authentication changes
+  useEffect(() => {
+    if (questId && isAuthenticated && wallet.address) {
+      loadQuestStatus(questId);
+    }
+  }, [questId, isAuthenticated, wallet.address]);
+
+  // Auto-authenticate when wallet connects
+  useEffect(() => {
+    const autoAuthenticate = async () => {
+      if (wallet.isConnected && wallet.address && !apolloApi.isAuthenticated()) {
+        console.log('🔐 Auto-authenticating wallet with backend...');
+        try {
+          const result = await authenticateWallet();
+          if (result.success) {
+            console.log('✅ Auto-authentication successful');
+          }
+        } catch (error) {
+          console.warn('⚠️ Auto-authentication failed:', error);
+        }
+      }
+    };
+
+    autoAuthenticate();
+  }, [wallet.isConnected, wallet.address, authenticateWallet]);
+
   /**
    * Register for a quest
    */
   const registerForQuest = useCallback(async (questId: number): Promise<QuestActionResult> => {
+    // Validate questId before proceeding
+    if (!questId || questId < 1) {
+      const msg = 'Invalid quest id';
+      console.warn(`registerForQuest called with invalid questId=${questId}`);
+      return {
+        success: false,
+        message: msg,
+        error: msg
+      };
+    }
+
     if (!wallet.address || !isAuthenticated) {
       return {
         success: false,
@@ -160,15 +225,43 @@ export function useQuestManager(questId?: number): UseQuestManagerReturn {
 
       // Step 1: Build transaction on backend
       console.log('🏗️ Building registration transaction...');
-      const transactionXdr = await apolloApi.buildQuestRegistration(questId, wallet.address);
+      console.debug('DEBUG: Wallet state before building transaction:', {
+        isConnected: wallet.isConnected,
+        address: wallet.address,
+        walletName: wallet.selectedWallet?.name
+      });      const transactionXdr = await apolloApi.buildQuestRegistration(questId, wallet.address);
       
       console.log('📄 Transaction XDR received from backend');
+      console.debug('DEBUG: Transaction XDR length:', transactionXdr?.length);
+      console.debug('DEBUG: Transaction XDR preview:', transactionXdr?.substring(0, 100) + '...');
 
       // Step 2: Sign transaction with wallet
       console.log('✍️ Signing transaction with wallet...');
-      const signedXdr = await signTransaction(transactionXdr);
+      console.debug('DEBUG: About to call signTransaction with wallet:', {
+        walletConnected: wallet.isConnected,
+        signTransactionType: typeof signTransaction,
+        xdrValid: !!transactionXdr && transactionXdr.length > 0
+      });
       
-      console.log('✅ Transaction signed successfully');
+      let signedXdr: string;
+      try {
+        signedXdr = await signTransaction(transactionXdr);
+        console.log('✅ Transaction signed successfully');
+        console.debug('DEBUG: Signed XDR length:', signedXdr?.length);
+        console.debug('DEBUG: Signed XDR preview:', signedXdr?.substring(0, 100) + '...');
+        
+        if (!signedXdr || signedXdr.length === 0) {
+          throw new Error('Wallet returned empty or null signed transaction');
+        }
+      } catch (signingError: any) {
+        console.error('❌ Transaction signing failed:', signingError);
+        console.debug('DEBUG: Signing error details:', {
+          errorType: signingError?.constructor?.name,
+          errorMessage: signingError?.message,
+          errorStack: signingError?.stack?.substring(0, 500)
+        });
+        throw new Error(`Transaction signing failed: ${signingError.message || 'Unknown wallet error'}`);
+      }
 
       // Step 3: Submit signed transaction via backend
       console.log('📤 Submitting signed transaction...');
@@ -296,15 +389,45 @@ export function useQuestManager(questId?: number): UseQuestManagerReturn {
 
       // Step 1: Build claim transaction on backend
       console.log('🏗️ Building claim transaction...');
+      console.debug('DEBUG: Wallet state before building claim transaction:', {
+        isConnected: wallet.isConnected,
+        address: wallet.address,
+        walletName: wallet.selectedWallet?.name
+      });
+      
       const transactionXdr = await apolloApi.buildClaimRewards(questId, wallet.address);
       
       console.log('📄 Claim transaction XDR received from backend');
+      console.debug('DEBUG: Claim transaction XDR length:', transactionXdr?.length);
+      console.debug('DEBUG: Claim transaction XDR preview:', transactionXdr?.substring(0, 100) + '...');
 
       // Step 2: Sign transaction with wallet
       console.log('✍️ Signing claim transaction with wallet...');
-      const signedXdr = await signTransaction(transactionXdr);
+      console.debug('DEBUG: About to call signTransaction for claim with wallet:', {
+        walletConnected: wallet.isConnected,
+        signTransactionType: typeof signTransaction,
+        xdrValid: !!transactionXdr && transactionXdr.length > 0
+      });
       
-      console.log('✅ Claim transaction signed successfully');
+      let signedXdr: string;
+      try {
+        signedXdr = await signTransaction(transactionXdr);
+        console.log('✅ Claim transaction signed successfully');
+        console.debug('DEBUG: Signed claim XDR length:', signedXdr?.length);
+        console.debug('DEBUG: Signed claim XDR preview:', signedXdr?.substring(0, 100) + '...');
+        
+        if (!signedXdr || signedXdr.length === 0) {
+          throw new Error('Wallet returned empty or null signed transaction for claim');
+        }
+      } catch (signingError: any) {
+        console.error('❌ Claim transaction signing failed:', signingError);
+        console.debug('DEBUG: Claim signing error details:', {
+          errorType: signingError?.constructor?.name,
+          errorMessage: signingError?.message,
+          errorStack: signingError?.stack?.substring(0, 500)
+        });
+        throw new Error(`Claim transaction signing failed: ${signingError.message || 'Unknown wallet error'}`);
+      }
 
       // Step 3: Submit signed transaction via backend
       console.log('📤 Submitting signed claim transaction...');

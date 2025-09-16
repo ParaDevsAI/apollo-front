@@ -35,6 +35,7 @@ export default function Home() {
     try {
       setQuestsError(null);
       const activeQuests = await apolloApi.getActiveQuests();
+        console.debug('DEBUG: Raw activeQuests from API:', activeQuests);
       
       if (Array.isArray(activeQuests)) {
         setQuests(activeQuests);
