@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { X } from "lucide-react";
-import BaseButton from "@/components/Ui/Button";
 import logo from "@/assets/images/navbar/logo.svg";
+import NavbarWalletButton from "@/components/Navbar/NavbarWalletButton";
 import { Dispatch, SetStateAction } from "react";
 
 interface NavLink {
@@ -58,12 +58,10 @@ export default function MobileMenu({
             ))}
           </div>
           <div className="flex justify-center">
-            <BaseButton
-              variant="transparent"
-              className="px-8 py-3 text-sm font-medium"
-            >
-              CONNECT WALLET
-            </BaseButton>
+            <NavbarWalletButton 
+              isMobile={true}
+              onAction={() => setIsOpen(false)}
+            />
           </div>
       </div>
     </>

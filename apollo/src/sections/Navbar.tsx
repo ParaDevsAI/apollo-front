@@ -4,8 +4,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import logo from "@/assets/images/navbar/logo.svg";
 import MobileMenu from "@/components/Navbar/MobileMenu";
-import BaseButton from "@/components/Ui/Button";
 import DesktopNavLinks from "@/components/Navbar/DesktopNavbarLinks";
+import NavbarWalletButton from "@/components/Navbar/NavbarWalletButton";
 import { getNavbarLinks } from "@/components/Navbar/navbarLinks";
 
 export default function Navbar() {
@@ -40,12 +40,7 @@ export default function Navbar() {
                     <div className="hidden md:flex items-center gap-[41px]">
                       <DesktopNavLinks links={navLinks} />
                       
-                      <BaseButton
-                        variant="transparent"
-                        className="px-5 py-2 text-[14px] font-medium"
-                      >
-                        CONNECT WALLET
-                      </BaseButton>
+                      <NavbarWalletButton />
                     </div>
                   
                     <div className="md:hidden">
