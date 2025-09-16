@@ -231,6 +231,18 @@ class ApolloApiClient {
   }
 
   // ========================================
+  // QUEST INFORMATION ENDPOINTS
+  // ========================================
+
+  /**
+   * Get all active quests available for registration
+   */
+  async getActiveQuests(): Promise<QuestInfo[]> {
+    const response = await this.request<{ quests: QuestInfo[], count: number, timestamp: string }>('/auth/wallet/quests/active');
+    return response.data?.quests || [];
+  }
+
+  // ========================================
   // QUEST STATUS ENDPOINTS  
   // ========================================
 

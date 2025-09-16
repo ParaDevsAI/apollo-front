@@ -4,7 +4,7 @@ export function getNavbarLinks() {
   return [
     {
       label: "Home",
-      href: "#home",
+      href: "/",
       feather: { 
         src: home, 
         width: 44, 
