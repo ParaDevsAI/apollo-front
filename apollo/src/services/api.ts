@@ -3,7 +3,7 @@
  * Handles all communication with the Apollo Backend Server
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api/v1';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -65,6 +65,20 @@ class ApolloApiClient {
     if (typeof window !== 'undefined') {
       this.authToken = localStorage.getItem('apollo-auth-token');
     }
+    
+    // Runtime sanity check: warn if API base URL points to the frontend (common misconfiguration)
+    try {
+      if (typeof window !== 'undefined') {
+        const apiUrl = new URL(this.baseUrl, window.location.href);
+        const frontendOrigin = window.location.origin;
+
+        if (apiUrl.origin === frontendOrigin) {
+          console.warn(`⚠️ NEXT_PUBLIC_API_BASE_URL (${this.baseUrl}) appears to point to the frontend origin (${frontendOrigin}). This will return HTML pages instead of JSON from the backend and cause API requests to fail.`);
+        }
+      }
+    } catch (e) {
+      // ignore URL parsing errors
+    }
   }
 
   private async request<T>(
@@ -91,18 +105,72 @@ class ApolloApiClient {
         headers,
       });
 
-      const data: ApiResponse<T> = await response.json();
-      
+      // Clonar a response para podermos ler texto em caso de falha no JSON
+      const clonedResponse = response.clone();
+
+      // Verificar se a resposta tem Content-Type JSON
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!contentType.includes('application/json')) {
+        const textResponse = await clonedResponse.text();
+        console.error(`❌ Resposta não é JSON. Content-Type: ${contentType}`);
+        console.error(`📄 Resposta recebida:`, textResponse.substring(0, 500));
+
+        throw new Error(`Servidor retornou ${response.status}: ${response.statusText}. Backend não está respondendo com JSON válido. Resposta: ${textResponse.substring(0,500)}`);
+      }
+
+      let data: ApiResponse<T> | any;
+
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // Se o JSON falhar, ler o texto para debugar
+        const textResponse = await clonedResponse.text();
+        console.error(`❌ Erro ao fazer parse do JSON:`, jsonError);
+        console.error(`📄 Resposta que causou erro:`, textResponse.substring(0, 1000));
+        throw new Error(`Resposta do servidor não é um JSON válido: ${textResponse.substring(0,500)}`);
+      }
+
       console.log(`📨 API Response [${response.status}]:`, data);
-      
+
       if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
+        // Tentar extrair mensagem útil do corpo JSON
+        let serverMessage: string;
+        try {
+          serverMessage = data?.error || data?.message || (typeof data === 'string' ? data : JSON.stringify(data).slice(0, 500));
+        } catch (jsonError: any) {
+          // Handle BigInt or other JSON serialization errors
+          if (jsonError.message?.includes('BigInt')) {
+            serverMessage = `Server response contains BigInt values that cannot be serialized. This is a backend issue that needs to be fixed.`;
+            console.error('❌ BigInt serialization error in server response:', data);
+          } else {
+            serverMessage = `Server response could not be processed: ${jsonError.message}`;
+          }
+        }
+        throw new Error(serverMessage || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return data;
     } catch (error: any) {
       console.error(`❌ API Error for ${endpoint}:`, error);
-      throw new Error(error.message || 'Network error');
+      
+      // Enhanced error handling for common connection issues
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('🚫 Connection Error Details:', {
+          baseUrl: this.baseUrl,
+          endpoint: endpoint,
+          fullUrl: url,
+          errorMessage: error.message
+        });
+        throw new Error(`❌ Backend Connection Failed: Cannot connect to backend at ${this.baseUrl}. Please ensure:\n1. Backend server is running (npm run dev in apollo-back)\n2. Backend is on port 3001\n3. No firewall blocking localhost:3001`);
+      }
+      
+      // Network timeout or other fetch errors
+      if (error.message?.includes('Failed to fetch')) {
+        throw new Error(`❌ Network Error: Backend server at ${this.baseUrl} is not responding. Please start the backend server first.`);
+      }
+      
+      throw new Error(error.message || 'Unknown network error');
     }
   }
 
@@ -162,12 +230,17 @@ class ApolloApiClient {
    * Build quest registration transaction
    */
   async buildQuestRegistration(questId: number, publicKey: string): Promise<string> {
-    const response = await this.request<{ transactionXdr: string }>(`/auth/wallet/quest/${questId}/build-register`, {
-      method: 'POST',
-      body: JSON.stringify({ publicKey }),
-    });
+    try {
+      const response = await this.request<{ transactionXdr: string }>(`/auth/wallet/quest/${questId}/build-register`, {
+        method: 'POST',
+        body: JSON.stringify({ publicKey }),
+      });
 
-    return response.data!.transactionXdr;
+      return response.data!.transactionXdr;
+    } catch (error: any) {
+      console.error(`❌ Error building quest registration for questId=${questId}:`, error);
+      throw new Error(`Erro ao construir transação de registro (questId=${questId}): ${error.message || String(error)}`);
+    }
   }
 
   /**
@@ -230,6 +303,18 @@ class ApolloApiClient {
     return response.data;
   }
 
+  /**
+   * Claim quest rewards (direct claim for admin/demo)
+   */
+  async claimQuestRewards(questId: number, publicKey: string): Promise<any> {
+    const response = await this.request(`/auth/wallet/quest/${questId}/claim`, {
+      method: 'POST',
+      body: JSON.stringify({ publicKey }),
+    });
+
+    return response.data;
+  }
+
   // ========================================
   // QUEST INFORMATION ENDPOINTS
   // ========================================
@@ -241,6 +326,7 @@ class ApolloApiClient {
     const response = await this.request<{ quests: QuestInfo[], count: number, timestamp: string }>('/auth/wallet/quests/active');
     return response.data?.quests || [];
   }
+
 
   // ========================================
   // QUEST STATUS ENDPOINTS  

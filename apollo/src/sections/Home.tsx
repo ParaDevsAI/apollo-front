@@ -11,14 +11,13 @@ import { apolloApi, QuestInfo } from "@/services/api";
 import { useQuestManager } from "@/hooks/useQuestManager";
 
 export default function Home() {
-  const { wallet, connectWallet: connectWalletKit } = useWallet();
-  const { isAuthenticated, authenticateWallet, registerForQuest } = useQuestManager();
+  const { wallet } = useWallet();
+  const questManager = useQuestManager();
   
   // Real quests state
   const [quests, setQuests] = useState<QuestInfo[]>([]);
   const [questsLoading, setQuestsLoading] = useState(true);
   const [questsError, setQuestsError] = useState<string | null>(null);
-  const [registrationStatus, setRegistrationStatus] = useState<{ [questId: number]: 'idle' | 'registering' | 'registered' | 'error' }>({});
   
 
 
@@ -36,6 +35,7 @@ export default function Home() {
     try {
       setQuestsError(null);
       const activeQuests = await apolloApi.getActiveQuests();
+        console.debug('DEBUG: Raw activeQuests from API:', activeQuests);
       
       if (Array.isArray(activeQuests)) {
         setQuests(activeQuests);
@@ -54,38 +54,9 @@ export default function Home() {
     }
   };
 
-  const handleQuestRegistration = async (questId: number) => {
-    if (!wallet.isConnected || !wallet.address) {
-      try {
-        await connectWalletKit();
-        await authenticateWallet();
-      } catch (err: any) {
-        setRegistrationStatus(prev => ({ ...prev, [questId]: 'error' }));
-        return;
-      }
-    }
-
-    if (!isAuthenticated) {
-      try {
-        await authenticateWallet();
-      } catch (err: any) {
-        setRegistrationStatus(prev => ({ ...prev, [questId]: 'error' }));
-        return;
-      }
-    }
-
-    try {
-      setRegistrationStatus(prev => ({ ...prev, [questId]: 'registering' }));
-      const result = await registerForQuest(questId);
-      if (result.success) {
-        setRegistrationStatus(prev => ({ ...prev, [questId]: 'registered' }));
-      } else {
-        setRegistrationStatus(prev => ({ ...prev, [questId]: 'error' }));
-      }
-    } catch (err: any) {
-      setRegistrationStatus(prev => ({ ...prev, [questId]: 'error' }));
-      console.error(`Failed to register for quest ${questId}:`, err);
-    }
+  // Esta função não é mais necessária, pois cada QuestCard gerencia seu próprio registro
+  const handleQuestRegistration = (questId: number) => {
+    console.log(`Quest ${questId} registration handled by QuestCard component`);
   };
 
 
@@ -103,7 +74,7 @@ export default function Home() {
         <ExploreSection />
 
         {questsLoading && quests.length === 0 ? (
-          <div className="grid gap-4 md:gap-6">
+          <div className=" overflow-auto grid gap-4 md:gap-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="bg-[var(--color-bg-cards)] opacity-60 rounded-[12px] md:rounded-[20px] p-4 md:p-6 border border-[var(--color-border)] animate-pulse">
                 <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
@@ -148,9 +119,9 @@ export default function Home() {
                 key={quest.id}
                 quest={quest}
                 onRegister={handleQuestRegistration}
-                registrationStatus={registrationStatus[quest.id] || 'idle'}
+                registrationStatus={'idle'} // Não usado mais, o QuestCard gerencia internamente
                 isWalletConnected={wallet.isConnected}
-                isAuthenticated={isAuthenticated}
+                isAuthenticated={questManager.isAuthenticated}
               />
             ))}
           </div>

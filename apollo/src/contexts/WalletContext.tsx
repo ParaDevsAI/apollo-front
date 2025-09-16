@@ -87,7 +87,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       console.log('❌ Albedo removido do modal');
       
       const stellarKit = new StellarWalletsKit({
-        network: WalletNetwork.PUBLIC, // Mude para TESTNET se necessário
+        network: WalletNetwork.TESTNET, // Using TESTNET to match backend configuration
         modules: allowedModules,
       });
       
@@ -270,11 +270,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
               // Dados formatados
               formattedAddress: `${addressResult.address.slice(0, 8)}...${addressResult.address.slice(-8)}`,
               
-              // Para uso em APIs
-              stellarAddress: addressResult.address,
-              networkPassphrase: 'Public Global Stellar Network ; September 2015',
-              
-              // Timestamp da conexão
+                // Para uso em APIs
+                stellarAddress: addressResult.address,
+                networkPassphrase: 'Test SDF Network ; September 2015',              // Timestamp da conexão
               connectedAt: new Date().toISOString(),
               
               // Informações da estrutura da wallet
@@ -469,9 +467,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
       isWalletAvailable: (wallet.selectedWallet as any)?.isAvailable || false,
       
       // Dados da rede
-      network: WalletNetwork.PUBLIC,
-      networkPassphrase: 'Public Global Stellar Network ; September 2015',
-      horizonUrl: 'https://horizon.stellar.org',
+      network: WalletNetwork.TESTNET,
+      networkPassphrase: 'Test SDF Network ; September 2015',
+      horizonUrl: 'https://horizon-testnet.stellar.org',
       
       // Dados do localStorage
       persistedWalletId: typeof window !== 'undefined' ? localStorage.getItem('apollo-wallet-id') : null,
