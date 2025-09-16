@@ -3,7 +3,7 @@
  * Handles all communication with the Apollo Backend Server
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api/v1';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -91,17 +91,43 @@ class ApolloApiClient {
         headers,
       });
 
-      const data: ApiResponse<T> = await response.json();
+      // Verificar se a resposta é JSON válida
+      const contentType = response.headers.get('content-type');
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error(`❌ Resposta não é JSON. Content-Type: ${contentType}`);
+        const textResponse = await response.text();
+        console.error(`📄 Resposta recebida:`, textResponse.substring(0, 500));
+        
+        throw new Error(`Servidor retornou ${response.status}: ${response.statusText}. Backend não está respondendo com JSON válido.`);
+      }
+
+      let data: ApiResponse<T>;
+      
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error(`❌ Erro ao fazer parse do JSON:`, jsonError);
+        const textResponse = await response.text();
+        console.error(`📄 Resposta que causou erro:`, textResponse);
+        throw new Error('Resposta do servidor não é um JSON válido');
+      }
       
       console.log(`📨 API Response [${response.status}]:`, data);
       
       if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return data;
     } catch (error: any) {
       console.error(`❌ API Error for ${endpoint}:`, error);
+      
+      // Se for um erro de rede/conexão
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Erro de conexão: Não foi possível conectar ao backend em ${this.baseUrl}. Verifique se o servidor está rodando.`);
+      }
+      
       throw new Error(error.message || 'Network error');
     }
   }
@@ -241,6 +267,7 @@ class ApolloApiClient {
     const response = await this.request<{ quests: QuestInfo[], count: number, timestamp: string }>('/auth/wallet/quests/active');
     return response.data?.quests || [];
   }
+
 
   // ========================================
   // QUEST STATUS ENDPOINTS  

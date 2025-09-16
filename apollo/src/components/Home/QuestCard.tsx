@@ -1,7 +1,10 @@
 "use client";
 
-import { ArrowUpRight, RotateCcw, Check } from "lucide-react";
-import { QuestInfo } from '@/services/api';
+import { ArrowUpRight, RotateCcw, Check, Loader2, AlertCircle } from "lucide-react";
+import { QuestInfo, QuestStatus } from '@/services/api';
+import { useQuestManager } from '@/hooks/useQuestManager';
+import { useWallet } from '@/contexts/WalletContext';
+import { useState, useEffect } from 'react';
 import ClientOnly from "@/components/ClientOnly";
 
 interface QuestCardProps {
@@ -19,6 +22,102 @@ export default function QuestCard({
   isWalletConnected,
   isAuthenticated
 }: QuestCardProps) {
+  const { wallet, connectWallet } = useWallet();
+  const questManager = useQuestManager();
+  
+  // Estado local para controlar o registro
+  const [localStatus, setLocalStatus] = useState<'idle' | 'connecting' | 'authenticating' | 'registering' | 'registered' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [questStatus, setQuestStatus] = useState<QuestStatus | null>(null);
+  
+  // Verificar status da quest quando a wallet e autenticação mudarem
+  useEffect(() => {
+    const checkQuestStatus = async () => {
+      if (wallet.isConnected && wallet.address && questManager.isAuthenticated) {
+        try {
+          const statusResult = await questManager.getQuestStatus(quest.id);
+          if (statusResult.success && statusResult.data) {
+            setQuestStatus(statusResult.data);
+            
+            // Atualizar status local baseado no status da quest
+            if (statusResult.data.isRegistered) {
+              setLocalStatus('registered');
+              console.log(`✅ Quest ${quest.id}: Usuário já registrado`);
+            } else {
+              setLocalStatus('idle');
+            }
+          }
+        } catch (error) {
+          console.log(`ℹ️ Quest ${quest.id}: Status não disponível (provavelmente não registrado)`);
+        }
+      }
+    };
+
+    checkQuestStatus();
+  }, [wallet.isConnected, wallet.address, questManager.isAuthenticated, quest.id]);
+
+  // Função para gerenciar o registro completo
+  const handleRegistration = async () => {
+    console.log(`🎯 APOLLO QUEST REGISTRATION - Iniciando para Quest ${quest.id}`);
+    setErrorMessage(null);
+
+    try {
+      // Passo 1: Conectar wallet se necessário
+      if (!wallet.isConnected) {
+        console.log('📱 Conectando wallet...');
+        setLocalStatus('connecting');
+        await connectWallet();
+        
+        if (!wallet.isConnected) {
+          throw new Error('Falha ao conectar wallet');
+        }
+        console.log('✅ Wallet conectada com sucesso');
+      }
+
+      // Passo 2: Autenticar com backend se necessário
+      if (!questManager.isAuthenticated) {
+        console.log('🔐 Autenticando wallet com backend...');
+        setLocalStatus('authenticating');
+        const authResult = await questManager.authenticateWallet();
+        
+        if (!authResult.success) {
+          throw new Error(authResult.message || 'Falha na autenticação');
+        }
+        console.log('✅ Autenticação realizada com sucesso');
+      }
+
+      // Passo 3: Registrar na quest
+      console.log(`📝 Registrando na Quest ${quest.id}...`);
+      setLocalStatus('registering');
+      
+      const registrationResult = await questManager.registerForQuest(quest.id);
+      
+      if (registrationResult.success) {
+        setLocalStatus('registered');
+        console.log(`🎉 Registro na Quest ${quest.id} concluído com sucesso!`);
+        console.log('📊 Resultado da transação:', registrationResult.data);
+        
+        // Verificar status atualizado
+        const statusResult = await questManager.getQuestStatus(quest.id);
+        if (statusResult.success) {
+          setQuestStatus(statusResult.data);
+        }
+      } else {
+        throw new Error(registrationResult.message || 'Falha no registro');
+      }
+
+    } catch (error: any) {
+      console.error(`❌ Erro no registro da Quest ${quest.id}:`, error);
+      setLocalStatus('error');
+      setErrorMessage(error.message || 'Erro inesperado durante o registro');
+      
+      // Voltar para idle após alguns segundos
+      setTimeout(() => {
+        setLocalStatus('idle');
+        setErrorMessage(null);
+      }, 5000);
+    }
+  };
   
   const formatRewardType = (questType: any) => {
     if (questType?.TradeVolume) {
@@ -60,9 +159,15 @@ export default function QuestCard({
   const projectName = `Quest #${quest.id}`;
 
   const getCardStyles = () => {
-    switch (registrationStatus) {
+    switch (localStatus) {
       case "registered":
-        return "bg-[var(--color-bg-card-completed)] opacity-60";
+        return "bg-green-500/20 border-green-500/50";
+      case "connecting":
+      case "authenticating":
+      case "registering":
+        return "bg-blue-500/20 border-blue-500/50 animate-pulse";
+      case "error":
+        return "bg-red-500/20 border-red-500/50";
       default:
         return "bg-[var(--color-bg-cards)] opacity-60";
     }
@@ -77,38 +182,72 @@ export default function QuestCard({
       );
     }
 
-    switch (registrationStatus) {
+    switch (localStatus) {
+      case "connecting":
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-white text-xs md:text-sm font-medium">
+              CONNECTING...
+            </span>
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-full flex items-center justify-center">
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
+            </button>
+          </div>
+        );
+      case "authenticating":
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-white text-xs md:text-sm font-medium">
+              AUTHENTICATING...
+            </span>
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
+            </button>
+          </div>
+        );
       case "registering":
         return (
           <div className="flex items-center gap-2">
             <span className="text-white text-xs md:text-sm font-medium">
               REGISTERING...
             </span>
-            <button className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center animate-pulse">
-              <RotateCcw className="w-4 h-4 md:w-5 md:h-5 text-black" />
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-purple-500 rounded-full flex items-center justify-center">
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" />
             </button>
           </div>
         );
       case "registered":
         return (
-          <button className="w-8 h-8 md:w-10 md:h-10 bg-[var(--color-bg-verified)] rounded-full flex items-center justify-center">
-            <Check className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-green-400 text-xs md:text-sm font-medium">
+              REGISTERED
+            </span>
+            <button className="w-8 h-8 md:w-10 md:h-10 bg-green-500 rounded-full flex items-center justify-center">
+              <Check className="w-4 h-4 md:w-5 md:h-5 text-white" />
+            </button>
+          </div>
         );
       case "error":
         return (
-          <button 
-            onClick={() => onRegister(quest.id)}
-            className="w-8 h-8 md:w-10 md:h-10 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
-          >
-            <RotateCcw className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-red-400 text-xs md:text-sm font-medium">
+              {errorMessage ? "RETRY" : "ERROR"}
+            </span>
+            <button 
+              onClick={handleRegistration}
+              className="w-8 h-8 md:w-10 md:h-10 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
+              title={errorMessage || "Erro no registro"}
+            >
+              <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-white" />
+            </button>
+          </div>
         );
       default:
         return (
           <button 
-            onClick={() => onRegister(quest.id)}
+            onClick={handleRegistration}
             className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-md"
+            disabled={localStatus !== 'idle'}
           >
             <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 text-black" />
           </button>
@@ -201,6 +340,13 @@ export default function QuestCard({
             
             {getActionButton()}
           </div>
+          
+          {/* Mostrar mensagem de erro se houver */}
+          {errorMessage && localStatus === 'error' && (
+            <div className="mt-2 p-2 bg-red-500/20 border border-red-500/50 rounded text-xs text-red-400">
+              {errorMessage}
+            </div>
+          )}
         </div>
 
         {/* Desktop Layout */}
@@ -276,6 +422,13 @@ export default function QuestCard({
             
             {getActionButton()}
           </div>
+          
+          {/* Mostrar mensagem de erro se houver - Desktop */}
+          {errorMessage && localStatus === 'error' && (
+            <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded text-sm text-red-400">
+              {errorMessage}
+            </div>
+          )}
         </div>
       </div>
     </ClientOnly>
