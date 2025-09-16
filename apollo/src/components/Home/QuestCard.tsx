@@ -25,6 +25,17 @@ export default function QuestCard({
   const { wallet, connectWallet } = useWallet();
   const questManager = useQuestManager();
   
+  // Debug: Log da estrutura dos dados da quest
+  console.log(`🔍 Quest ${quest.id} data structure:`, {
+    quest,
+    hasTitle: !!quest.title,
+    hasDescription: !!quest.description,
+    end_timestamp: quest.end_timestamp,
+    quest_type: quest.quest_type,
+    distribution: quest.distribution,
+    is_active: quest.is_active
+  });
+  
   // Estado local para controlar o registro
   const [localStatus, setLocalStatus] = useState<'idle' | 'connecting' | 'authenticating' | 'registering' | 'registered' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -134,7 +145,9 @@ export default function QuestCard({
 
   const formatTimeRemaining = (endTimestamp: number) => {
     const now = Date.now();
-    const timeLeft = endTimestamp - now;
+    // Converter timestamp se estiver em segundos
+    const endTimestampMs = endTimestamp < 10000000000 ? endTimestamp * 1000 : endTimestamp;
+    const timeLeft = endTimestampMs - now;
     
     if (timeLeft <= 0) return 'Expired';
     
@@ -152,7 +165,23 @@ export default function QuestCard({
   const hasLiquidity = quest.quest_type?.PoolPosition;
   const hasTrading = quest.quest_type?.TradeVolume;
   const hasTokenHolding = quest.quest_type?.TokenHold;
-  const isExpired = quest.end_timestamp <= Date.now();
+  
+  // Debug: Verificar formato do timestamp
+  console.log(`🔍 Quest ${quest.id} timestamp debug:`, {
+    end_timestamp: quest.end_timestamp,
+    end_timestamp_type: typeof quest.end_timestamp,
+    current_time: Date.now(),
+    current_time_type: typeof Date.now(),
+    is_timestamp_seconds: quest.end_timestamp < 10000000000, // Se for menor que 10 bilhões, provavelmente está em segundos
+    calculated_expired: quest.end_timestamp <= Date.now()
+  });
+  
+  // Converter timestamp se estiver em segundos (backend comum) para milissegundos
+  const endTimestampMs = quest.end_timestamp < 10000000000 
+    ? quest.end_timestamp * 1000 
+    : quest.end_timestamp;
+    
+  const isExpired = endTimestampMs <= Date.now();
 
   // Usar o primeiro caractere do título ou 'Q' para Quest
   const projectIcon = quest.title ? quest.title.charAt(0).toUpperCase() : 'Q';
@@ -328,7 +357,7 @@ export default function QuestCard({
             </span>
             {!isExpired && (
               <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
-                {formatTimeRemaining(quest.end_timestamp)}
+                {formatTimeRemaining(endTimestampMs)}
               </span>
             )}
           </div>
@@ -407,7 +436,7 @@ export default function QuestCard({
               </span>
               {!isExpired && (
                 <span className="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
-                  {formatTimeRemaining(quest.end_timestamp)}
+                  {formatTimeRemaining(endTimestampMs)}
                 </span>
               )}
             </div>
